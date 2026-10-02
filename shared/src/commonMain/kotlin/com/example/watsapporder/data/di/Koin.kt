@@ -17,6 +17,7 @@ import com.example.watsapporder.domain.useCase.login.AuthUseCases
 import com.example.watsapporder.domain.useCase.product.ProductsUseCases
 import com.example.watsapporder.platform.platformModule
 import com.example.watsapporder.presentation.screens.home.HomeViewModel
+import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
 import com.example.watsapporder.presentation.screens.login.LoginViewModel
 import com.example.watsapporder.presentation.screens.login.email.EmailLoginViewModel
@@ -68,6 +69,7 @@ private val viewModelModule = module {
     factory { PhoneLoginViewModel(get()) }
     factory { HomeViewModel(get()) }
     factory { InputsViewModel(get()) }
+    factory { CreateProductViewModel(get(), get()) }
 }
 
 val appModule = module {

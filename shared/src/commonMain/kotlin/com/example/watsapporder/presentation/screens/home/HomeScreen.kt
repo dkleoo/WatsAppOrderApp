@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,8 +59,11 @@ import com.example.watsapporder.data.mappers.ProductType
 import com.example.watsapporder.domain.useCase.login.AuthUseCases
 import com.example.watsapporder.presentation.screens.components.ButtonContainerGreen
 import com.example.watsapporder.presentation.screens.components.ButtonTransparentCustom
+import com.example.watsapporder.presentation.screens.home.create.CreateProductContent
+import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsContent
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
+import com.example.watsapporder.presentation.screens.login.LoginScreen
 import com.example.watsapporder.presentation.theme.ColorApp
 import com.example.watsapporder.presentation.theme.plazaOnTextStyle
 import org.jetbrains.compose.resources.painterResource
@@ -75,7 +79,6 @@ import watsapporder.shared.generated.resources.edit_product_price_label
 import watsapporder.shared.generated.resources.edit_product_save
 import watsapporder.shared.generated.resources.edit_product_subtitle
 import watsapporder.shared.generated.resources.edit_product_title
-import watsapporder.shared.generated.resources.home_coming_soon
 import watsapporder.shared.generated.resources.home_edit_mode
 import watsapporder.shared.generated.resources.home_edit_product_action
 import watsapporder.shared.generated.resources.home_empty
@@ -104,8 +107,11 @@ import watsapporder.shared.generated.resources.login_provider_email
 import watsapporder.shared.generated.resources.login_provider_google
 import watsapporder.shared.generated.resources.login_provider_phone
 import watsapporder.shared.generated.resources.price_format
+import kotlin.jvm.Transient
 
-data class HomeScreen(val loggedUser: LoggedUser) : Screen {
+data class HomeScreen(
+    @Transient val loggedUser: LoggedUser
+) : Screen {
 
     @Composable
     override fun Content() {
@@ -113,11 +119,22 @@ data class HomeScreen(val loggedUser: LoggedUser) : Screen {
         val state by viewModel.uiState.collectAsState()
         val inputsViewModel = koinScreenModel<InputsViewModel>()
         val inputsState by inputsViewModel.uiState.collectAsState()
+        val createViewModel = koinScreenModel<CreateProductViewModel>()
+        val createState by createViewModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val authUseCases = koinInject<AuthUseCases>()
 
         LaunchedEffect(Unit) {
             viewModel.loadProducts()
+        }
+
+        LaunchedEffect(state.selectedTab) {
+            if (state.selectedTab == HomeTab.INPUTS) {
+                inputsViewModel.loadInputs()
+            }
+            if (state.selectedTab == HomeTab.CREATE) {
+                createViewModel.loadInputs()
+            }
         }
 
         Scaffold(
@@ -135,7 +152,7 @@ data class HomeScreen(val loggedUser: LoggedUser) : Screen {
                     ordersCount = 0,
                     onLogout = {
                         authUseCases.signOut()
-                        navigator.popUntilRoot()
+                        navigator.replaceAll(LoginScreen())
                     },
                 )
                 HomeTabs(
@@ -163,7 +180,17 @@ data class HomeScreen(val loggedUser: LoggedUser) : Screen {
                             onSave = inputsViewModel::saveInput,
                         )
 
-                        HomeTab.CREATE -> ComingSoon()
+                        HomeTab.CREATE -> CreateProductContent(
+                            state = createState,
+                            onSelectType = createViewModel::selectType,
+                            onNameChange = createViewModel::onNameChange,
+                            onPriceChange = createViewModel::onPriceChange,
+                            onAddStep = createViewModel::addStep,
+                            onRemoveStep = createViewModel::removeStep,
+                            onStepNameChange = createViewModel::onStepNameChange,
+                            onToggleInput = createViewModel::toggleInput,
+                            onSave = { createViewModel.saveProduct(onCreated = viewModel::loadProducts) },
+                        )
                     }
                 }
             }
@@ -449,7 +476,10 @@ private fun MenuContent(
                 )
             }
 
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            else -> LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 8.dp),
+            ) {
                 items(state.products, key = { it.id }) { product ->
                     ProductCard(product = product, onEdit = onEdit)
                 }
@@ -547,22 +577,6 @@ private fun ProductCard(
                 painter = painterResource(Res.drawable.ic_edit),
             )
         }
-    }
-}
-
-@Composable
-private fun ComingSoon() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(Res.string.home_coming_soon),
-            style = plazaOnTextStyle(
-                base = MaterialTheme.typography.bodyMedium,
-                color = ColorApp.textGray,
-            ),
-        )
     }
 }
 

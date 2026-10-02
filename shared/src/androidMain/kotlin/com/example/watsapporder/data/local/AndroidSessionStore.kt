@@ -9,8 +9,12 @@ import com.example.watsapporder.platform.ActivityHolder
 class AndroidSessionStore : SessionStore {
 
     private val prefs: SharedPreferences
-        get() = (ActivityHolder.current ?: error("Activity no disponible"))
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        get() {
+            val context = ActivityHolder.application
+                ?: ActivityHolder.current
+                ?: error("Contexto no disponible")
+            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
 
     override fun save(session: LoggedUser) {
         prefs.edit()

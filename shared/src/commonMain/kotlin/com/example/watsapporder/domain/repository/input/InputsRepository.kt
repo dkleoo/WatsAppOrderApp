@@ -4,5 +4,6 @@ import com.example.watsapporder.data.mappers.InputCreateRequest
 import com.example.watsapporder.data.repositoyImpl.input.InputResults
 
 interface InputsRepository {
+    suspend fun getInputs(): InputResults
     suspend fun createInput(request: InputCreateRequest): InputResults
 }

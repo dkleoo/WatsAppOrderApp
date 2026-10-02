@@ -18,6 +18,13 @@ class MainActivity : ComponentActivity() {
             App()
         }
     }
+
+    override fun onDestroy() {
+        if (ActivityHolder.current === this) {
+            ActivityHolder.current = null
+        }
+        super.onDestroy()
+    }
 }
 
 @Preview

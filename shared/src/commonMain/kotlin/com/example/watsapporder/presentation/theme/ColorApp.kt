@@ -25,6 +25,9 @@ object ColorApp {
 
     val googleRed = Color(0xFFEA4335)
     val googleRedSoft = Color(0xFFFEF2F2)
+    val googleRedDark = Color(0xFFB91C1C)
+    val categoryNeutralSoft = Color(0xFFE7E2DB)
+    val categoryNeutralText = Color(0xFF6B5B4B)
 
     val white = Color(0xFFFFFFFF)
     val whiteOverlay10 = Color(0x1AFFFFFF)

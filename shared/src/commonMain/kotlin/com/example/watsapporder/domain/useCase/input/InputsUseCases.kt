@@ -5,6 +5,8 @@ import com.example.watsapporder.data.repositoyImpl.input.InputResults
 import com.example.watsapporder.domain.repository.input.InputsRepository
 
 class InputsUseCases(private val inputsRepository: InputsRepository) {
+    suspend fun getInputs(): InputResults = inputsRepository.getInputs()
+
     suspend fun createInput(request: InputCreateRequest): InputResults =
         inputsRepository.createInput(request)
 }
