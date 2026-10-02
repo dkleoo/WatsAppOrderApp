@@ -1,0 +1,347 @@
+---
+description: Arquitectura y flujo de features PlazaOn (KMP + Compose)
+alwaysApply: true
+---
+
+# Arquitectura PlazaOn
+
+Al crear o extender features, seguir **exactamente** este flujo y layout (referencia: login).
+
+## Flujo de capas (obligatorio)
+
+```
+Screen (Voyager)
+  → ViewModel (ScreenModel + StateFlow)
+    → UseCase
+      → Repository (interface, domain)
+        → RepositoryImpl (data)
+          → Services (interface + Impl, Ktor)
+            → DTOs / mappers
+```
+
+No saltear capas. La UI no llama repositorios ni servicios. El ViewModel no llama Ktor.
+
+## Carpetas por feature `{name}`
+
+Base: `shared/src/commonMain/kotlin/org/example/project/`
+
+| Capa | Ruta |
+|------|------|
+| Screen + ViewModel + `*ScreenState` | `presentation/screens/{name}/` |
+| UI cards/componentes del feature | `presentation/screens/{name}/components/` |
+| UseCase | `domain/useCase/{name}/` |
+| Repository interface | `domain/repository/{name}/` |
+| RepositoryImpl + Results | `data/repositoyImpl/{name}/` |
+| Services + Impl | `data/remote/{name}/` |
+| DTOs / mappers / modelos de datos | `data/mappers/` |
+| Params de UI (`*Params`) | `data/params/` |
+| Endpoints | `domain/util/EndPoints.kt` |
+| Platform APIs | `platform/` (`expect`/`actual`) |
+
+Nota: el typo `repositoyImpl` es el nombre real del paquete; no renombrarlo.
+
+## Convenciones por capa
+
+- **Screen**: Voyager `Screen`; compone cards; observa `StateFlow` del VM; usa `koinScreenModel()` / inyección Voyager-Koin.
+- **ViewModel**: `ScreenModel`; define `*ScreenState` en el mismo archivo; `MutableStateFlow` + `asStateFlow`; `screenModelScope.launch`; mapea `*Results` sealed a estado UI.
+- **UseCase**: clase que recibe el `Repository` y expone métodos `suspend` delgados (puede agrupar varios del feature).
+- **Repository**: interface en `domain`; Impl en `data` orquesta Services + Settings/mappers y devuelve sealed `*Results`.
+- **Services**: interface + `*Impl` con `HttpClient`; URLs desde `EndPoints`.
+- **Results**: sealed class en `data/repositoyImpl/{name}/` (éxitos + `MessageError`).
+
+## Data classes y modelos (obligatorio)
+
+- **Estados de pantalla (`*ScreenState`)**: siempre en el **ViewModel** del feature (`presentation/screens/{name}/{Name}ViewModel.kt`), junto a la clase `ScreenModel`. Referencia: `UserScreenState`, `ProductsScreenState`, `LoginScreenState`.
+- **Modelos de dominio, DTOs, mappers, enums de flujo compartidos**: siempre en `data/mappers/` (un archivo por tipo o agrupados por feature, ej. `CoverageScheduleModels.kt`).
+- **Nunca** definir DTOs / modelos de red o dominio en `presentation/` ni en `domain/`.
+- **Nunca** definir `*ScreenState` en `data/mappers/` ni en `domain/`.
+- Los composables importan items/DTOs de UI desde `org.example.project.data.mappers` cuando aplica; el estado de pantalla se observa desde el ViewModel.
+- **Reutilizar antes de duplicar**: antes de crear un DTO nuevo, buscar en `data/mappers/` si ya existe uno con la misma forma JSON (mismos campos y serialización). Si aplica a varios features/endpoints, **reutilizarlo** en lugar de copiarlo.
+- **Nombre genérico** cuando el DTO es transversal (ej. body `{ "isActive": true }` → `ActiveStatusRequest`, no `UserActiveDto` ni `UpdateCoverageZoneStatusRequest` por feature).
+
+```kotlin
+// ❌ MAL — ScreenState en data/mappers
+// data/mappers/ProductsScreenState.kt
+data class ProductsScreenState(val isLoading: Boolean = false)
+
+// ✅ BIEN — ScreenState en el ViewModel
+// presentation/screens/product/ProductViewModel.kt
+data class ProductsScreenState(
+    val products: List<ProductItem> = emptyList(),
+    val isLoading: Boolean = false,
+)
+
+class ProductViewModel(...) : ScreenModel {
+    private val _uiState = MutableStateFlow(ProductsScreenState())
+    val uiState = _uiState.asStateFlow()
+}
+```
+
+```kotlin
+// ❌ MAL — duplicar el mismo body por feature
+data class UserActiveDto(val isActive: Boolean)
+data class UpdateCoverageZoneStatusRequest(val isActive: Boolean)
+
+// ✅ BIEN — un DTO compartido con nombre neutro
+data class ActiveStatusRequest(val isActive: Boolean)
+```
+
+## Parámetros de funciones (obligatorio)
+
+Si una función supera **6 parámetros** (incluye `@Composable`, `suspend`, métodos de clase, callbacks, etc.), agrupar los argumentos en una **`data class` de params**.
+
+- Nombre: `{NombreFuncion}Params` (ej. `CreateUserDialogParams`, `LoadUsersParams`).
+- Ubicación: **`data/params/`** (un archivo por clase, ej. `data/params/CreateCoverageZoneDialogParams.kt`). Solo `private data class` local al composable puede quedar en el mismo archivo.
+- La función recibe **un solo** parámetro `params` (o el nombre descriptivo acorde al contexto).
+- Al extender una función existente y pasar de 6, refactorizar de inmediato.
+
+```kotlin
+// ❌ MAL — 7+ parámetros sueltos
+@Composable
+fun CreateUserDialog(
+    roles: List<RoleItem>,
+    mode: UserFormMode,
+    initialForm: CreateUserForm,
+    errorMessage: String?,
+    errorMessageId: Long,
+    onClearMessage: () -> Unit,
+    isLoading: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (CreateUserForm) -> Unit,
+) { /* ... */ }
+
+// ✅ BIEN — params en data/params/CreateUserDialogParams.kt
+data class CreateUserDialogParams(
+    val roles: List<RoleItem>,
+    val mode: UserFormMode,
+    val initialForm: CreateUserForm,
+    val errorMessage: String?,
+    val errorMessageId: Long,
+    val onClearMessage: () -> Unit,
+    val isLoading: Boolean,
+    val onDismiss: () -> Unit,
+    val onSubmit: (CreateUserForm) -> Unit,
+)
+
+@Composable
+fun CreateUserDialog(params: CreateUserDialogParams) { /* ... */ }
+```
+
+## Comentarios (obligatorio)
+
+- **Prohibido** agregar comentarios en código (`//`, `/* */`, KDoc en DTOs/composables/ViewModels) salvo bloque `@Suppress` exigido por el compilador o linter.
+- El código debe ser autoexplicativo: nombres claros, funciones pequeñas, DTOs reutilizados con nombres genéricos.
+- No usar `TODO` comentado; dejar el método vacío o no implementado hasta que exista el endpoint/flujo.
+
+```kotlin
+// ❌ MAL
+/** Body genérico para activar/inactivar. */
+data class ActiveStatusRequest(val isActive: Boolean)
+
+// ✅ BIEN
+data class ActiveStatusRequest(val isActive: Boolean)
+```
+
+## Booleanos (obligatorio)
+
+No usar literales booleanos redundantes. Detekt reporta `Boolean literals should not be redundant`.
+
+Usar la expresión booleana directa en lugar de `if (cond) true else false` o variantes equivalentes.
+
+```kotlin
+// ❌ MAL
+isSettingsExpanded = if (item.isSettingsChild()) true else it.isSettingsExpanded
+isSettingsExpanded = if (nextExpanded) it.isSettingsExpanded else false
+isSettingsExpanded = if (openingFromCollapsedRail) true else !it.isSettingsExpanded
+isSettingsExpanded = if (open) it.isSettingsExpanded else false
+isEnabled = if (user.isActive) true else false
+
+// ✅ BIEN
+isSettingsExpanded = item.isSettingsChild() || it.isSettingsExpanded
+isSettingsExpanded = nextExpanded && it.isSettingsExpanded
+isSettingsExpanded = openingFromCollapsedRail || !it.isSettingsExpanded
+isSettingsExpanded = open && it.isSettingsExpanded
+isEnabled = user.isActive
+```
+
+## DI (Koin) — registrar siempre
+
+En `data/di/Koin.kt` / `appModuleApp.kt`:
+
+1. `serverModule` → `factory<XServices> { XServicesImpl(get()) }`
+2. `repositoryModule` → `single<XRepository> { XRepositoryImpl(...) }`
+3. `useCasesModule` → `factory { XUsesCases(get()) }`
+4. `viewModelModule` → `factory { XViewModel(get()) }`
+
+APIs de plataforma → `expect val platformModule` + `actual` por target.
+
+## Navegación y UI compartida
+
+- Rutas en `presentation/screens/routes/Routes.kt`.
+- Componentes reutilizables en `presentation/screens/components/`.
+- Tema en `presentation/theme/`.
+- Strings en `composeResources` (es/en/pt); no hardcodear textos de UI.
+
+### Textos de UI (obligatorio)
+
+- **Prohibido** literales visibles en `Text(...)`, `label = { Text(...) }`, `placeholder = { Text(...) }`, botones y mensajes de pantalla.
+- **Siempre** usar `stringResource(Res.string.xxx)` (importar cada string desde `plazaon.shared.generated.resources.*`).
+- Valores dinámicos con placeholders: `%1$s`, `%1$d` en `string.xml` (es/en/pt).
+- Excepción: números puros generados en runtime (contadores, IDs) sin significado semántico fijo.
+
+```kotlin
+// ❌ MAL
+Text("Pedido mínimo")
+Text(text = "Distancia en kilómetros:")
+
+// ✅ BIEN
+Text(stringResource(Res.string.coverage_delivery_minimum_order_title))
+```
+
+### Rutas con parámetros (obligatorio)
+
+Sin parámetros: instancia fija.
+
+```kotlin
+val LOGIN_SCREEN = LoginScreen()
+```
+
+Con parámetros: lambda que recibe los args y devuelve `Screen`. Nunca `fun` de ruta.
+
+```kotlin
+val MAIN_SCREEN: (LoggedUser) -> Screen = { loggedUser ->
+    MainScreen(loggedUser)
+}
+
+val UPDATE_USER: (UserViewModel?) -> Screen = { userViewModel ->
+    UpdateUserScreen(userViewModel)
+}
+```
+
+Navegar invocando la lambda:
+
+```kotlin
+navigator?.push(Routes.MAIN_SCREEN(loggedUser))
+navigator?.push(Routes.UPDATE_USER(userViewModel))
+```
+
+## Iconos (obligatorio)
+
+- Iconos en `composeResources/drawable/` como **vector XML** (`.xml`), nunca SVG.
+- Reutilizar iconos existentes; no duplicar.
+- Usar siempre `Icon` + `painterResource` (sin chequear dark/light):
+
+```kotlin
+Icon(
+    painter = painterResource(Res.drawable.ic_back),
+    contentDescription = "back",
+    modifier = Modifier.size(40.dp)
+        .clickable { /* ... */ },
+)
+```
+
+- Para logos/iconos multicolor: `tint = Color.Unspecified`.
+- No crear variantes dark ni validar `isModeDark` al pintar iconos.
+
+## Tipografía (obligatorio)
+
+- **Prohibido** pasar `fontSize`, `fontWeight`, `lineHeight`, `color`, `textAlign` o `textDecoration` directamente en `Text(...)`, `BasicTextField(textStyle = ...)`, labels/placeholders de `OutlinedTextField` u otros composables de texto cuando esos parámetros definan estilo.
+- **Siempre** usar `style = plazaOnTextStyle(...)` desde [`PlazaOnTextStyle.kt`](shared/src/commonMain/kotlin/org/example/project/presentation/theme/PlazaOnTextStyle.kt).
+- Para variar sobre un estilo Material existente: `plazaOnTextStyle(base = MaterialTheme.typography.bodySmall, color = ...)`.
+- Parámetros de layout (`modifier`, `maxLines`, `overflow`, `letterSpacing`, etc.) permanecen en el composable; solo el estilo tipográfico va en `plazaOnTextStyle`.
+
+```kotlin
+// ❌ MAL
+Text(
+    text = title,
+    color = ColorApp.textColor,
+    fontSize = 14.sp,
+    lineHeight = 20.sp,
+    fontWeight = FontWeight.Bold,
+)
+
+// ✅ BIEN
+Text(
+    text = title,
+    style = plazaOnTextStyle(
+        color = ColorApp.textColor,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Bold,
+    ),
+)
+```
+
+## Colores (obligatorio)
+
+- **Prohibido** `Color(0x...)` o `Color.Black.copy(alpha = ...)` en `presentation/` (screens, components). La única fuente de literales hex es [`ColorApp.kt`](shared/src/commonMain/kotlin/org/example/project/presentation/theme/ColorApp.kt).
+- **Siempre** usar `ColorApp.{token}` o `MaterialTheme.colorScheme.*` para colores de UI.
+- Antes de crear un token nuevo, revisar si ya existe uno con el mismo valor (ej. `textGray`, `cardBackGroundGray`, `modeGreenG090`).
+- Si falta un color: agregarlo **una vez** en `ColorApp` con nombre semántico (ej. `hintText`, no `gray888`).
+- Para estados enabled/disabled reutilizar tokens existentes (`textGray`, `grayButton`, `disableColor`, etc.).
+- Eliminar condicionales redundantes cuando ambas ramas usan el mismo color.
+
+```kotlin
+// ❌ MAL
+val borderColor = if (enabled) Color(0xFF797B7C) else Color(0xFF9A9C9D)
+val containerColor = if (enabled) Color(0xFFEEEEEE) else Color(0xFFEEEEEE)
+
+// ✅ BIEN
+val borderColor = if (enabled) ColorApp.textGray else ColorApp.grayButton
+val containerColor = ColorApp.cardBackGroundGray
+```
+
+## Reutilización de componentes (obligatorio)
+
+Antes de crear cualquier componente visual, **buscar si ya existe** uno que sirva y reutilizarlo.
+
+- Buscar primero en `presentation/screens/components/` (compartidos) y en `presentation/screens/{feature}/components/` (del feature).
+- **Prohibido** crear botones propios con `Button`, `OutlinedButton` o `TextButton` de Material. Usar los del design system:
+  - `ButtonContainerGreen` → botón primario (relleno).
+  - `ButtonTransparentCustom` → botón secundario / outline (borde + texto).
+- Otros componentes existentes que deben reutilizarse en vez de reescribir:
+  - `PasswordTextField`, `VerificationCodeInput`, `DialogRangeDate`, `DateStartAndEnd`
+  - `SnackbarMessage`, `AppSnackbarHost`, `LoadingDialog` / `AppLoadingHost`, `BackgroundDialog` / `FullScreenPopupDialog`
+  - `ScreenOrientationContent` (layout horizontal/vertical)
+  - `SkeletonBar` + `rememberSkeletonBrush` (skeletons/shimmer)
+- Si un componente existente no cubre un caso, **parametrizarlo** (agregar parámetros con valor por defecto) en lugar de duplicarlo.
+- Si el componente es transversal y falta, crearlo **una sola vez** en `presentation/screens/components/` con nombre genérico; nunca una copia por feature.
+- La misma regla aplica a DTOs, mappers, params, enums y utilidades: **reutilizar antes de duplicar**.
+
+```kotlin
+// ❌ MAL — botones de Material reinventados
+OutlinedButton(onClick = onAdd, shape = RoundedCornerShape(100.dp)) {
+    Text("Agregar Kit")
+}
+Button(onClick = onSave) { Text("Guardar") }
+
+// ✅ BIEN — botones del design system
+ButtonContainerGreen(
+    onClick = onSave,
+    text = stringResource(Res.string.save),
+    modifier = Modifier.height(40.dp),
+)
+ButtonTransparentCustom(
+    onClick = onAdd,
+    text = stringResource(Res.string.add_kit),
+    painter = painterResource(Res.drawable.ic_plus_white),
+    modifier = Modifier.height(40.dp),
+)
+```
+
+## Checklist al agregar un feature
+
+1. Endpoints en `EndPoints.kt` si hay red
+2. DTOs en `data/mappers/` (reutilizar existentes si el JSON coincide)
+3. Services interface + Impl
+4. Repository interface + Impl + sealed Results
+5. UseCase
+6. ViewModel + `*ScreenState` en el mismo archivo del ViewModel (`presentation/screens/{name}/`)
+7. Screen + components + `*Params` en `data/params/`
+8. Registrar en módulos Koin
+9. Exponer ruta en `Routes` si aplica
+10. Sin literales de color en UI; tokens en `ColorApp`
+11. Sin textos hardcodeados en `Text` / labels; strings en `composeResources` (es/en/pt)
+12. Sin comentarios en código (salvo `@Suppress` requerido)
+13. Tipografía vía `plazaOnTextStyle()`; sin `fontSize`/`fontWeight`/`lineHeight`/`color` directos en `Text` o `textStyle`
+14. Reutilizar componentes existentes (`ButtonContainerGreen`, `ButtonTransparentCustom`, etc.); sin `Button`/`OutlinedButton`/`TextButton` de Material ni copias por feature

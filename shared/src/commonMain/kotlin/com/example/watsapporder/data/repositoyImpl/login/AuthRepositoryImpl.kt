@@ -1,0 +1,89 @@
+package com.example.watsapporder.data.repositoyImpl.login
+
+import com.example.watsapporder.data.local.SessionStore
+import com.example.watsapporder.data.mappers.AuthProvider
+import com.example.watsapporder.data.mappers.LoggedUser
+import com.example.watsapporder.data.mappers.LoginRequest
+import com.example.watsapporder.data.mappers.PhoneCodeResult
+import com.example.watsapporder.data.mappers.RegisterRequest
+import com.example.watsapporder.data.mappers.toLoggedUser
+import com.example.watsapporder.data.remote.login.AuthServices
+import com.example.watsapporder.data.remote.login.FirebaseAuthGateway
+import com.example.watsapporder.domain.repository.login.AuthRepository
+import kotlin.random.Random
+
+class AuthRepositoryImpl(
+    private val firebaseGateway: FirebaseAuthGateway,
+    private val authServices: AuthServices,
+    private val sessionStore: SessionStore,
+) : AuthRepository {
+
+    override suspend fun restoreSession(): LoggedUser? = sessionStore.get()
+
+    override suspend fun signInWithGoogle(): LoginResults =
+        runAuth { linkBackend(firebaseGateway.signInWithGoogle()) }
+
+    override suspend fun signInWithEmail(email: String, password: String): LoginResults = runAuth {
+        authServices.login(LoginRequest(email = email, password = password))
+            .toLoggedUser(AuthProvider.EMAIL)
+            .also(sessionStore::save)
+    }
+
+    override suspend fun registerWithEmail(email: String, password: String, name: String): LoginResults =
+        runAuth {
+            authServices.register(RegisterRequest(email = email, password = password, name = name))
+                .toLoggedUser(AuthProvider.EMAIL)
+                .also(sessionStore::save)
+        }
+
+    override suspend fun sendPhoneCode(phoneNumber: String): PhoneResults = try {
+        when (val result = firebaseGateway.sendPhoneCode(phoneNumber)) {
+            is PhoneCodeResult.CodeSent -> PhoneResults.CodeSent(result.verificationId)
+            is PhoneCodeResult.AutoVerified -> PhoneResults.Success(linkBackend(result.user))
+        }
+    } catch (exception: Exception) {
+        PhoneResults.MessageError(exception.message.orEmpty())
+    }
+
+    override suspend fun confirmPhoneCode(verificationId: String, code: String): LoginResults =
+        runAuth { linkBackend(firebaseGateway.confirmPhoneCode(verificationId, code)) }
+
+    override fun signOut() {
+        firebaseGateway.signOut()
+        sessionStore.clear()
+    }
+
+    private suspend fun linkBackend(firebaseUser: LoggedUser): LoggedUser {
+        val email = firebaseUser.email
+        if (email.isBlank()) return firebaseUser
+
+        sessionStore.get()?.takeIf { it.email == email }?.let { return it }
+
+        val password = sessionStore.getFederatedPassword(email)
+            ?: generatePassword().also { sessionStore.saveFederatedPassword(email, it) }
+
+        val response = try {
+            authServices.register(
+                RegisterRequest(email = email, password = password, name = firebaseUser.name),
+            )
+        } catch (exception: Exception) {
+            authServices.login(LoginRequest(email = email, password = password))
+        }
+        return response.toLoggedUser(firebaseUser.provider).also(sessionStore::save)
+    }
+
+    private suspend fun runAuth(block: suspend () -> LoggedUser): LoginResults = try {
+        LoginResults.Success(block())
+    } catch (exception: Exception) {
+        LoginResults.MessageError(exception.message.orEmpty())
+    }
+}
+
+private fun generatePassword(): String {
+    val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    return buildString {
+        repeat(16) {
+            append(chars[Random.nextInt(chars.length)])
+        }
+    }
+}
