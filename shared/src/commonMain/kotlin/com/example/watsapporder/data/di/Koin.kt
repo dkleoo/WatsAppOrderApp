@@ -61,8 +61,8 @@ private val serverModule = module {
 
 private val repositoryModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
-    single<ProductsRepository> { ProductsRepositoryImpl(get()) }
-    single<InputsRepository> { InputsRepositoryImpl(get()) }
+    single<ProductsRepository> { ProductsRepositoryImpl(get(), get()) }
+    single<InputsRepository> { InputsRepositoryImpl(get(), get()) }
     single<StoreRepository> { StoreRepositoryImpl(get(), get()) }
 }
 
