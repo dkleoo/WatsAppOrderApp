@@ -22,13 +22,6 @@ class StoreRepositoryImpl(
         StoreResults.MessageError(exception.message.orEmpty())
     }
 
-    override suspend fun createStore(request: StoreRequest): StoreResults = try {
-        val token = sessionStore.get()?.token.orEmpty()
-        StoreResults.Store(services.createStore(token, request))
-    } catch (exception: Exception) {
-        StoreResults.MessageError(exception.message.orEmpty())
-    }
-
     override suspend fun updateStore(id: Int, request: StoreRequest): StoreResults = try {
         val token = sessionStore.get()?.token.orEmpty()
         StoreResults.Store(services.updateStore(token, id, request))

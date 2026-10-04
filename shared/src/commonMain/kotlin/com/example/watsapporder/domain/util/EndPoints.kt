@@ -8,4 +8,5 @@ object EndPoints {
     const val PRODUCTS = "products"
     const val INPUTS = "inputs"
     const val STORES = "stores"
+    const val STORES_ME = "stores/me"
 }

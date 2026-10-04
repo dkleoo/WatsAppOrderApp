@@ -2,8 +2,6 @@ package com.example.watsapporder.presentation.screens.home.store
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.example.watsapporder.data.mappers.AuthProvider
-import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.data.mappers.StoreRequest
 import com.example.watsapporder.data.mappers.StoreResponse
 import com.example.watsapporder.data.repositoyImpl.store.StoreRepositoryImpl
@@ -40,7 +38,6 @@ data class StoreScreenState(
 
 class StoreViewModel(
     private val storeUseCases: StoreUseCases,
-    private val loggedUser: LoggedUser,
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(StoreScreenState())
@@ -56,7 +53,7 @@ class StoreViewModel(
 
                 is StoreResults.MessageError -> {
                     if (result.message == StoreRepositoryImpl.STORE_NOT_FOUND) {
-                        createInitialStore()
+                        _uiState.update { it.copy(isLoading = false) }
                     } else {
                         _uiState.update {
                             it.copy(isLoading = false, errorMessage = result.message.ifBlank { null })
@@ -67,28 +64,9 @@ class StoreViewModel(
         }
     }
 
-    private suspend fun createInitialStore() {
-        val request = initialRequest()
-        when (val result = storeUseCases.createStore(request)) {
-            is StoreResults.Store -> _uiState.update {
-                it.copy(isLoading = false, store = result.item, form = result.item.toForm())
-            }
-
-            is StoreResults.MessageError -> {
-                if (result.message == StoreRepositoryImpl.STORE_NOT_FOUND) {
-                    _uiState.update { it.copy(isLoading = false, isEditorVisible = true) }
-                } else {
-                    _uiState.update {
-                        it.copy(isLoading = false, errorMessage = result.message.ifBlank { null })
-                    }
-                }
-            }
-        }
-    }
-
     fun openEditor() {
         _uiState.update {
-            it.copy(isEditorVisible = true, form = (it.store ?: emptyStore()).toForm())
+            it.copy(isEditorVisible = true, form = it.store?.toForm() ?: it.form)
         }
     }
 
@@ -140,14 +118,15 @@ class StoreViewModel(
 
         screenModelScope.launch {
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
-            val request = current.form.toRequest()
             val existing = current.store
-            val result = if (existing == null) {
-                storeUseCases.createStore(request)
-            } else {
-                storeUseCases.updateStore(existing.id, request)
+            if (existing == null) {
+                _uiState.update {
+                    it.copy(isSaving = false, errorMessage = StoreRepositoryImpl.STORE_NOT_FOUND)
+                }
+                return@launch
             }
-            when (result) {
+            val request = current.form.toRequest()
+            when (val result = storeUseCases.updateStore(existing.id, request)) {
                 is StoreResults.Store -> _uiState.update {
                     it.copy(
                         isSaving = false,
@@ -162,21 +141,6 @@ class StoreViewModel(
                 }
             }
         }
-    }
-
-    private fun initialRequest(): StoreRequest {
-        val welcome = if (loggedUser.provider == AuthProvider.GOOGLE && loggedUser.name.isNotBlank()) {
-            loggedUser.name
-        } else {
-            ""
-        }
-        return StoreRequest(
-            welcomeMessage = welcome,
-            address = "",
-            phone = "",
-            whatsappBusinessPhone = "",
-            idWhatsApp = "",
-        )
     }
 }
 
@@ -194,13 +158,4 @@ private fun StoreForm.toRequest(): StoreRequest = StoreRequest(
     phone = phone.trim(),
     whatsappBusinessPhone = whatsappBusinessPhone.trim(),
     idWhatsApp = idWhatsApp.trim(),
-)
-
-private fun emptyStore(): StoreResponse = StoreResponse(
-    id = 0,
-    welcomeMessage = "",
-    address = "",
-    phone = "",
-    whatsappBusinessPhone = "",
-    idWhatsApp = "",
 )

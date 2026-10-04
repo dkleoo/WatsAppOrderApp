@@ -12,7 +12,6 @@ import com.example.watsapporder.data.repositoyImpl.input.InputsRepositoryImpl
 import com.example.watsapporder.data.repositoyImpl.login.AuthRepositoryImpl
 import com.example.watsapporder.data.repositoyImpl.product.ProductsRepositoryImpl
 import com.example.watsapporder.data.repositoyImpl.store.StoreRepositoryImpl
-import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.domain.repository.input.InputsRepository
 import com.example.watsapporder.domain.repository.login.AuthRepository
 import com.example.watsapporder.domain.repository.product.ProductsRepository
@@ -80,7 +79,7 @@ private val viewModelModule = module {
     factory { HomeViewModel(get()) }
     factory { InputsViewModel(get()) }
     factory { CreateProductViewModel(get(), get()) }
-    factory { (user: LoggedUser) -> StoreViewModel(get(), user) }
+    factory { StoreViewModel(get()) }
 }
 
 val appModule = module {
