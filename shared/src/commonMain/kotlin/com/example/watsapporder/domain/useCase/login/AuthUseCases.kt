@@ -22,5 +22,7 @@ class AuthUseCases(private val authRepository: AuthRepository) {
     suspend fun confirmPhoneCode(verificationId: String, code: String): LoginResults =
         authRepository.confirmPhoneCode(verificationId, code)
 
+    suspend fun refreshSession() = authRepository.refreshSession()
+
     fun signOut() = authRepository.signOut()
 }

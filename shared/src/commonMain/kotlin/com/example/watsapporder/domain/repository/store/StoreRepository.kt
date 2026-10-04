@@ -5,5 +5,6 @@ import com.example.watsapporder.data.repositoyImpl.store.StoreResults
 
 interface StoreRepository {
     suspend fun getStore(): StoreResults
+    suspend fun getStoreForUser(userId: Int): StoreResults
     suspend fun updateStore(id: Int, request: StoreRequest): StoreResults
 }

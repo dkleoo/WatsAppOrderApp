@@ -11,5 +11,6 @@ interface AuthRepository {
     suspend fun registerWithEmail(email: String, password: String, name: String): LoginResults
     suspend fun sendPhoneCode(phoneNumber: String): PhoneResults
     suspend fun confirmPhoneCode(verificationId: String, code: String): LoginResults
+    suspend fun refreshSession()
     fun signOut()
 }

@@ -28,6 +28,7 @@ data class UserResponse(
     val id: Int,
     val email: String,
     val name: String,
+    val storeId: Int? = null,
 )
 
 @Serializable
@@ -41,12 +42,16 @@ fun AuthResponse.toLoggedUser(provider: AuthProvider): LoggedUser = LoggedUser(
     email = user.email,
     token = token,
     provider = provider,
+    storeId = user.storeId,
+    backendId = user.id,
 )
 
-fun UserResponse.toLoggedUser(provider: AuthProvider): LoggedUser = LoggedUser(
+fun UserResponse.toLoggedUser(provider: AuthProvider, token: String = ""): LoggedUser = LoggedUser(
     id = id.toString(),
     name = name,
     email = email,
-    token = "",
+    token = token,
     provider = provider,
+    storeId = storeId,
+    backendId = id,
 )

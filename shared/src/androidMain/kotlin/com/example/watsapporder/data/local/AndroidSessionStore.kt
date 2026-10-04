@@ -24,11 +24,13 @@ class AndroidSessionStore : SessionStore {
             .putString(KEY_EMAIL, session.email)
             .putString(KEY_PROVIDER, session.provider.name)
             .putString(KEY_PHOTO, session.photoUrl)
+            .putInt(KEY_STORE_ID, session.storeId ?: STORE_ID_NONE)
             .apply()
     }
 
     override fun get(): LoggedUser? {
         val token = prefs.getString(KEY_TOKEN, null) ?: return null
+        val storeId = prefs.getInt(KEY_STORE_ID, STORE_ID_NONE).takeIf { it != STORE_ID_NONE }
         return LoggedUser(
             id = prefs.getString(KEY_ID, "").orEmpty(),
             name = prefs.getString(KEY_NAME, "").orEmpty(),
@@ -38,6 +40,7 @@ class AndroidSessionStore : SessionStore {
                 AuthProvider.valueOf(prefs.getString(KEY_PROVIDER, "").orEmpty())
             }.getOrDefault(AuthProvider.EMAIL),
             photoUrl = prefs.getString(KEY_PHOTO, null),
+            storeId = storeId,
         )
     }
 
@@ -62,5 +65,7 @@ class AndroidSessionStore : SessionStore {
         const val KEY_EMAIL = "email"
         const val KEY_PROVIDER = "provider"
         const val KEY_PHOTO = "photo_url"
+        const val KEY_STORE_ID = "store_id"
+        const val STORE_ID_NONE = -1
     }
 }

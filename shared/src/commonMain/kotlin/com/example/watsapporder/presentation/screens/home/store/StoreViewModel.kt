@@ -2,6 +2,7 @@ package com.example.watsapporder.presentation.screens.home.store
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.data.mappers.StoreRequest
 import com.example.watsapporder.data.mappers.StoreResponse
 import com.example.watsapporder.data.repositoyImpl.store.StoreRepositoryImpl
@@ -38,6 +39,7 @@ data class StoreScreenState(
 
 class StoreViewModel(
     private val storeUseCases: StoreUseCases,
+    private val loggedUser: LoggedUser,
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(StoreScreenState())
@@ -46,19 +48,13 @@ class StoreViewModel(
     fun bootstrap() {
         screenModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            when (val result = storeUseCases.getStore()) {
+            when (val result = storeUseCases.getStoreForUser(loggedUser.backendId)) {
                 is StoreResults.Store -> _uiState.update {
                     it.copy(isLoading = false, store = result.item, form = result.item.toForm())
                 }
 
-                is StoreResults.MessageError -> {
-                    if (result.message == StoreRepositoryImpl.STORE_NOT_FOUND) {
-                        _uiState.update { it.copy(isLoading = false) }
-                    } else {
-                        _uiState.update {
-                            it.copy(isLoading = false, errorMessage = result.message.ifBlank { null })
-                        }
-                    }
+                is StoreResults.MessageError -> _uiState.update {
+                    it.copy(isLoading = false, isEditorVisible = true)
                 }
             }
         }

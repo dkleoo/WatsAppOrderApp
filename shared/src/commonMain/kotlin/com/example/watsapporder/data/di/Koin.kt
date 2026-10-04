@@ -79,7 +79,7 @@ private val viewModelModule = module {
     factory { HomeViewModel(get()) }
     factory { InputsViewModel(get()) }
     factory { CreateProductViewModel(get(), get()) }
-    factory { StoreViewModel(get()) }
+    factory { StoreViewModel(get(), get()) }
 }
 
 val appModule = module {

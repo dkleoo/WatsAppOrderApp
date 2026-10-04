@@ -77,6 +77,14 @@ class AuthRepositoryImpl(
         }
     }
 
+    override suspend fun refreshSession() {
+        val current = sessionStore.get() ?: return
+        runCatching {
+            val storeId = authServices.profile(current.token).storeId ?: current.storeId
+            sessionStore.save(current.copy(storeId = storeId))
+        }
+    }
+
     private suspend fun runAuth(block: suspend () -> LoggedUser): LoginResults = try {
         LoginResults.Success(block())
     } catch (exception: Exception) {

@@ -17,14 +17,23 @@ import io.ktor.http.isSuccess
 
 class StoreServicesImpl(private val httpClient: HttpClient) : StoreServices {
 
-    override suspend fun getStore(token: String): StoreResponse? {
-        val response = httpClient.get(EndPoints.BASE_URL + EndPoints.STORES_ME) {
+    override suspend fun getStore(token: String, id: Int): StoreResponse? {
+        val response = httpClient.get(EndPoints.BASE_URL + EndPoints.STORES + "/$id") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
         if (response.status.value == 404 || response.status.value == 400) return null
         if (!response.status.isSuccess()) {
             throw IllegalStateException(response.errorMessage())
         }
+        return runCatching { response.body<StoreResponse>() }.getOrNull()
+    }
+
+    override suspend fun getStoreByUser(token: String, userId: Int): StoreResponse? {
+        val response = httpClient.get(EndPoints.BASE_URL + EndPoints.STORES + "/user/$userId") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        if (response.status.value == 404 || response.status.value == 400) return null
+        if (!response.status.isSuccess()) return null
         return runCatching { response.body<StoreResponse>() }.getOrNull()
     }
 

@@ -73,6 +73,7 @@ import com.example.watsapporder.presentation.theme.plazaOnTextStyle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import coil3.compose.AsyncImage
 import watsapporder.shared.generated.resources.Res
 import watsapporder.shared.generated.resources.edit_product_close
@@ -127,7 +128,7 @@ data class HomeScreen(
         val inputsState by inputsViewModel.uiState.collectAsState()
         val createViewModel = koinScreenModel<CreateProductViewModel>()
         val createState by createViewModel.uiState.collectAsState()
-        val storeViewModel = koinScreenModel<StoreViewModel>()
+        val storeViewModel = koinScreenModel<StoreViewModel> { parametersOf(loggedUser) }
         val storeState by storeViewModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val authUseCases = koinInject<AuthUseCases>()
