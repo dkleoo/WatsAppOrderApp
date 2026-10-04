@@ -111,4 +111,21 @@
     <string name="create_error_step_name">Digite o nome do passo</string>
     <string name="create_error_step_inputs">Adicione pelo menos 1 ingrediente</string>
     <string name="create_error_inputs_required">Adicione pelo menos 1 passo</string>
+    <string name="store_form_title">Dados da loja</string>
+    <string name="store_form_subtitle">Atualize as informações da sua loja</string>
+    <string name="store_welcome_label">Mensagem de boas-vindas</string>
+    <string name="store_welcome_placeholder">Olá! Bem-vindo à minha loja</string>
+    <string name="store_address_label">Endereço</string>
+    <string name="store_address_placeholder">Rua 1, nº 2-3</string>
+    <string name="store_phone_label">Telefone</string>
+    <string name="store_phone_placeholder">+55 11 90000 0000</string>
+    <string name="store_whatsapp_label">WhatsApp do negócio</string>
+    <string name="store_whatsapp_placeholder">5511900000000</string>
+    <string name="store_id_whatsapp_label">ID do WhatsApp</string>
+    <string name="store_id_whatsapp_placeholder">1379699841884103</string>
+    <string name="store_save">Salvar loja</string>
+    <string name="store_close">Fechar</string>
+    <string name="store_avatar_content_description">Foto de perfil</string>
+    <string name="store_error_required">Este campo é obrigatório</string>
+    <string name="store_updated">Loja atualizada</string>
 </resources>

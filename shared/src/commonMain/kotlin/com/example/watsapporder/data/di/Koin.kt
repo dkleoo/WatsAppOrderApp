@@ -6,19 +6,26 @@ import com.example.watsapporder.data.remote.login.AuthServices
 import com.example.watsapporder.data.remote.login.AuthServicesImpl
 import com.example.watsapporder.data.remote.product.ProductsServices
 import com.example.watsapporder.data.remote.product.ProductsServicesImpl
+import com.example.watsapporder.data.remote.store.StoreServices
+import com.example.watsapporder.data.remote.store.StoreServicesImpl
 import com.example.watsapporder.data.repositoyImpl.input.InputsRepositoryImpl
 import com.example.watsapporder.data.repositoyImpl.login.AuthRepositoryImpl
 import com.example.watsapporder.data.repositoyImpl.product.ProductsRepositoryImpl
+import com.example.watsapporder.data.repositoyImpl.store.StoreRepositoryImpl
+import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.domain.repository.input.InputsRepository
 import com.example.watsapporder.domain.repository.login.AuthRepository
 import com.example.watsapporder.domain.repository.product.ProductsRepository
+import com.example.watsapporder.domain.repository.store.StoreRepository
 import com.example.watsapporder.domain.useCase.input.InputsUseCases
 import com.example.watsapporder.domain.useCase.login.AuthUseCases
 import com.example.watsapporder.domain.useCase.product.ProductsUseCases
+import com.example.watsapporder.domain.useCase.store.StoreUseCases
 import com.example.watsapporder.platform.platformModule
 import com.example.watsapporder.presentation.screens.home.HomeViewModel
 import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
+import com.example.watsapporder.presentation.screens.home.store.StoreViewModel
 import com.example.watsapporder.presentation.screens.login.LoginViewModel
 import com.example.watsapporder.presentation.screens.login.email.EmailLoginViewModel
 import com.example.watsapporder.presentation.screens.login.phone.PhoneLoginViewModel
@@ -49,18 +56,21 @@ private val serverModule = module {
     single<AuthServices> { AuthServicesImpl(get()) }
     single<ProductsServices> { ProductsServicesImpl(get()) }
     single<InputsServices> { InputsServicesImpl(get()) }
+    single<StoreServices> { StoreServicesImpl(get()) }
 }
 
 private val repositoryModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single<ProductsRepository> { ProductsRepositoryImpl(get()) }
     single<InputsRepository> { InputsRepositoryImpl(get()) }
+    single<StoreRepository> { StoreRepositoryImpl(get(), get()) }
 }
 
 private val useCasesModule = module {
     factory { AuthUseCases(get()) }
     factory { ProductsUseCases(get()) }
     factory { InputsUseCases(get()) }
+    factory { StoreUseCases(get()) }
 }
 
 private val viewModelModule = module {
@@ -70,6 +80,7 @@ private val viewModelModule = module {
     factory { HomeViewModel(get()) }
     factory { InputsViewModel(get()) }
     factory { CreateProductViewModel(get(), get()) }
+    factory { (user: LoggedUser) -> StoreViewModel(get(), user) }
 }
 
 val appModule = module {

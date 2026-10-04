@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,7 @@ import com.example.watsapporder.data.mappers.AuthProvider
 import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.data.mappers.ProductResponse
 import com.example.watsapporder.data.mappers.ProductType
+import com.example.watsapporder.data.params.StoreDialogParams
 import com.example.watsapporder.domain.useCase.login.AuthUseCases
 import com.example.watsapporder.presentation.screens.components.ButtonContainerGreen
 import com.example.watsapporder.presentation.screens.components.ButtonTransparentCustom
@@ -63,12 +65,16 @@ import com.example.watsapporder.presentation.screens.home.create.CreateProductCo
 import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsContent
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
+import com.example.watsapporder.presentation.screens.home.store.StoreEditorDialog
+import com.example.watsapporder.presentation.screens.home.store.StoreViewModel
 import com.example.watsapporder.presentation.screens.login.LoginScreen
 import com.example.watsapporder.presentation.theme.ColorApp
 import com.example.watsapporder.presentation.theme.plazaOnTextStyle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
+import coil3.compose.AsyncImage
 import watsapporder.shared.generated.resources.Res
 import watsapporder.shared.generated.resources.edit_product_close
 import watsapporder.shared.generated.resources.edit_product_delete
@@ -107,6 +113,7 @@ import watsapporder.shared.generated.resources.login_provider_email
 import watsapporder.shared.generated.resources.login_provider_google
 import watsapporder.shared.generated.resources.login_provider_phone
 import watsapporder.shared.generated.resources.price_format
+import watsapporder.shared.generated.resources.store_avatar_content_description
 import kotlin.jvm.Transient
 
 data class HomeScreen(
@@ -121,11 +128,14 @@ data class HomeScreen(
         val inputsState by inputsViewModel.uiState.collectAsState()
         val createViewModel = koinScreenModel<CreateProductViewModel>()
         val createState by createViewModel.uiState.collectAsState()
+        val storeViewModel = koinScreenModel<StoreViewModel> { parametersOf(loggedUser) }
+        val storeState by storeViewModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val authUseCases = koinInject<AuthUseCases>()
 
         LaunchedEffect(Unit) {
             viewModel.loadProducts()
+            storeViewModel.bootstrap()
         }
 
         LaunchedEffect(state.selectedTab) {
@@ -150,6 +160,7 @@ data class HomeScreen(
                 HomeHeader(
                     loggedUser = loggedUser,
                     ordersCount = 0,
+                    onAvatarClick = storeViewModel::openEditor,
                     onLogout = {
                         authUseCases.signOut()
                         navigator.replaceAll(LoginScreen())
@@ -211,6 +222,31 @@ data class HomeScreen(
                 ),
             )
         }
+
+        if (storeState.isEditorVisible) {
+            StoreEditorDialog(
+                params = StoreDialogParams(
+                    welcomeMessage = storeState.form.welcomeMessage,
+                    address = storeState.form.address,
+                    phone = storeState.form.phone,
+                    whatsappBusinessPhone = storeState.form.whatsappBusinessPhone,
+                    idWhatsApp = storeState.form.idWhatsApp,
+                    addressError = storeState.addressError?.let { stringResource(it) },
+                    phoneError = storeState.phoneError?.let { stringResource(it) },
+                    whatsappError = storeState.whatsappError?.let { stringResource(it) },
+                    idWhatsAppError = storeState.idWhatsAppError?.let { stringResource(it) },
+                    errorMessage = storeState.errorMessage,
+                    isSaving = storeState.isSaving,
+                    onWelcomeMessageChange = storeViewModel::onWelcomeMessageChange,
+                    onAddressChange = storeViewModel::onAddressChange,
+                    onPhoneChange = storeViewModel::onPhoneChange,
+                    onWhatsappChange = storeViewModel::onWhatsappChange,
+                    onIdWhatsAppChange = storeViewModel::onIdWhatsAppChange,
+                    onSave = storeViewModel::save,
+                    onDismiss = storeViewModel::closeEditor,
+                ),
+            )
+        }
     }
 }
 
@@ -225,6 +261,7 @@ private fun providerLabel(provider: AuthProvider): String = when (provider) {
 private fun HomeHeader(
     loggedUser: LoggedUser,
     ordersCount: Int,
+    onAvatarClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
     Row(
@@ -237,15 +274,27 @@ private fun HomeHeader(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(ColorApp.whiteOverlay20),
+                .background(ColorApp.whiteOverlay20)
+                .clickable { onAvatarClick() },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_person),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = ColorApp.white,
-            )
+            if (!loggedUser.photoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = loggedUser.photoUrl,
+                    contentDescription = stringResource(Res.string.store_avatar_content_description),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape),
+                )
+            } else {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_person),
+                    contentDescription = stringResource(Res.string.store_avatar_content_description),
+                    modifier = Modifier.size(24.dp),
+                    tint = ColorApp.white,
+                )
+            }
         }
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
