@@ -23,6 +23,14 @@ class LoginViewModel(private val authUseCases: AuthUseCases) : ScreenModel {
     private val _uiState = MutableStateFlow(LoginScreenState())
     val uiState = _uiState.asStateFlow()
 
+    fun reset() {
+        _uiState.value = LoginScreenState()
+    }
+
+    fun consumeLoggedUser() {
+        _uiState.update { it.copy(loggedUser = null) }
+    }
+
     fun restoreSession() {
         screenModelScope.launch {
             authUseCases.restoreSession()?.let { user ->

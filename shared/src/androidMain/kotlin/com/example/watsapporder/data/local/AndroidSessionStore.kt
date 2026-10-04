@@ -23,6 +23,7 @@ class AndroidSessionStore : SessionStore {
             .putString(KEY_NAME, session.name)
             .putString(KEY_EMAIL, session.email)
             .putString(KEY_PROVIDER, session.provider.name)
+            .putString(KEY_PHOTO, session.photoUrl)
             .apply()
     }
 
@@ -36,6 +37,7 @@ class AndroidSessionStore : SessionStore {
             provider = runCatching {
                 AuthProvider.valueOf(prefs.getString(KEY_PROVIDER, "").orEmpty())
             }.getOrDefault(AuthProvider.EMAIL),
+            photoUrl = prefs.getString(KEY_PHOTO, null),
         )
     }
 
@@ -59,5 +61,6 @@ class AndroidSessionStore : SessionStore {
         const val KEY_NAME = "name"
         const val KEY_EMAIL = "email"
         const val KEY_PROVIDER = "provider"
+        const val KEY_PHOTO = "photo_url"
     }
 }

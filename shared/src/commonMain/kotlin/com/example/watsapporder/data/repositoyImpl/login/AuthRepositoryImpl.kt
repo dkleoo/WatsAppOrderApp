@@ -10,7 +10,6 @@ import com.example.watsapporder.data.mappers.toLoggedUser
 import com.example.watsapporder.data.remote.login.AuthServices
 import com.example.watsapporder.data.remote.login.FirebaseAuthGateway
 import com.example.watsapporder.domain.repository.login.AuthRepository
-import kotlin.random.Random
 
 class AuthRepositoryImpl(
     private val firebaseGateway: FirebaseAuthGateway,
@@ -59,17 +58,23 @@ class AuthRepositoryImpl(
 
         sessionStore.get()?.takeIf { it.email == email }?.let { return it }
 
-        val password = sessionStore.getFederatedPassword(email)
-            ?: generatePassword().also { sessionStore.saveFederatedPassword(email, it) }
+        val password = federatedPassword(email)
 
-        val response = try {
+        return try {
             authServices.register(
                 RegisterRequest(email = email, password = password, name = firebaseUser.name),
-            )
-        } catch (exception: Exception) {
-            authServices.login(LoginRequest(email = email, password = password))
+            ).toLoggedUser(firebaseUser.provider).also(sessionStore::save)
+        } catch (registerException: Exception) {
+            try {
+                authServices.login(LoginRequest(email = email, password = password))
+                    .toLoggedUser(firebaseUser.provider)
+                    .also(sessionStore::save)
+            } catch (loginException: Exception) {
+                throw IllegalStateException(
+                    loginException.message ?: registerException.message ?: "No se pudo iniciar sesión",
+                )
+            }
         }
-        return response.toLoggedUser(firebaseUser.provider).also(sessionStore::save)
     }
 
     private suspend fun runAuth(block: suspend () -> LoggedUser): LoginResults = try {
@@ -79,11 +84,10 @@ class AuthRepositoryImpl(
     }
 }
 
-private fun generatePassword(): String {
-    val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    return buildString {
-        repeat(16) {
-            append(chars[Random.nextInt(chars.length)])
-        }
+private fun federatedPassword(email: String): String {
+    var hash = 5381
+    email.lowercase().forEach { char ->
+        hash = (hash * 33) xor char.code
     }
+    return "federated_${email.lowercase()}_${hash.toUInt().toString(16)}"
 }

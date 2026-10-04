@@ -12,6 +12,7 @@ data class LoggedUser(
     val email: String,
     val token: String,
     val provider: AuthProvider,
+    val photoUrl: String? = null,
 )
 
 sealed class PhoneCodeResult {

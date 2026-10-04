@@ -135,4 +135,5 @@ private fun FirebaseUser.toLoggedUser(provider: AuthProvider): LoggedUser = Logg
     email = email.orEmpty(),
     token = "",
     provider = provider,
+    photoUrl = photoUrl?.toString(),
 )

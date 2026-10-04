@@ -6,4 +6,5 @@ object EndPoints {
     const val LOGIN = "auth/login"
     const val ME = "auth/me"
     const val PRODUCTS = "products"
-    const val INPUTS = "inputs"}
+    const val INPUTS = "inputs"
+    const val STORES = "stores"

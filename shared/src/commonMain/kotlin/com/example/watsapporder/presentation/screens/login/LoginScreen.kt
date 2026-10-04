@@ -27,6 +27,7 @@ class LoginScreen : Screen {
         LaunchedEffect(state.loggedUser) {
             state.loggedUser?.let { loggedUser ->
                 navigator.push(Routes.HOME_SCREEN(loggedUser))
+                viewModel.consumeLoggedUser()
             }
         }
 
