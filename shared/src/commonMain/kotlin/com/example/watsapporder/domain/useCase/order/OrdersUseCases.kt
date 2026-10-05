@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
 class OrdersUseCases(private val ordersRepository: OrdersRepository) {
     suspend fun getOrders(): OrderResults = ordersRepository.getOrders()
 
+    suspend fun getOrderDetail(id: Int): OrderResults = ordersRepository.getOrderDetail(id)
+
     suspend fun getSequence(): Long = ordersRepository.getSequence()
 
     suspend fun updateStatus(id: Int, status: OrderStatus): OrderResults =

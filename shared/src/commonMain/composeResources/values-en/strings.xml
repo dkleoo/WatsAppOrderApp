@@ -147,4 +147,11 @@
     <string name="orders_view_products">View products and steps</string>
     <string name="orders_empty">No orders yet</string>
     <string name="orders_error">Could not load orders</string>
+    <string name="orders_detail_title">Order detail</string>
+    <string name="orders_customer_data">Customer data</string>
+    <string name="orders_products_title">Products and selected steps</string>
+    <string name="orders_accept">Accept Order (Send to Kitchen)</string>
+    <string name="orders_reject">Reject Order</string>
+    <string name="orders_send_on_way">Send for Delivery (On the way)</string>
+    <string name="orders_status_cancelled">Rejected</string>
 </resources>

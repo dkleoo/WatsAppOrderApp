@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface OrdersRepository {
     suspend fun getOrders(): OrderResults
+    suspend fun getOrderDetail(id: Int): OrderResults
     suspend fun getSequence(): Long
     suspend fun updateStatus(id: Int, status: OrderStatus): OrderResults
     fun streamOrders(startSequence: Long, onSequence: (Long) -> Unit): Flow<OrderResponse>

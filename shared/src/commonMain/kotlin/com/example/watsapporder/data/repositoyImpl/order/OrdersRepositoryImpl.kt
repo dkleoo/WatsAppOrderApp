@@ -20,6 +20,12 @@ class OrdersRepositoryImpl(
         OrderResults.MessageError(exception.message.orEmpty())
     }
 
+    override suspend fun getOrderDetail(id: Int): OrderResults = try {
+        OrderResults.Order(services.getOrderDetail(token(), id))
+    } catch (exception: Exception) {
+        OrderResults.MessageError(exception.message.orEmpty())
+    }
+
     override suspend fun getSequence(): Long = runCatching {
         services.getSequence(token())
     }.getOrDefault(0L)

@@ -16,7 +16,7 @@ enum class OrderFilter {
     ALL,
     PENDING,
     KITCHEN,
-    ON_ROUTE,
+    ON_THE_WAY,
     DELIVERED,
 }
 
@@ -24,14 +24,17 @@ data class OrdersScreenState(
     val orders: List<OrderResponse> = emptyList(),
     val filter: OrderFilter = OrderFilter.ALL,
     val isLoading: Boolean = false,
+    val isDetailLoading: Boolean = false,
+    val isUpdating: Boolean = false,
+    val detail: OrderResponse? = null,
     val errorMessage: String? = null,
 ) {
     val visibleOrders: List<OrderResponse>
         get() = when (filter) {
             OrderFilter.ALL -> orders
             OrderFilter.PENDING -> orders.filter { it.status == OrderStatus.PENDING }
-            OrderFilter.KITCHEN -> orders.filter { it.status == OrderStatus.KITCHEN }
-            OrderFilter.ON_ROUTE -> orders.filter { it.status == OrderStatus.ON_ROUTE }
+            OrderFilter.KITCHEN -> orders.filter { it.status == OrderStatus.IN_KITCHEN }
+            OrderFilter.ON_THE_WAY -> orders.filter { it.status == OrderStatus.ON_THE_WAY }
             OrderFilter.DELIVERED -> orders.filter { it.status == OrderStatus.DELIVERED }
         }
 
@@ -65,14 +68,53 @@ class OrdersViewModel(
         _uiState.update { it.copy(filter = filter) }
     }
 
-    fun updateStatus(orderId: Int, status: OrderStatus) {
+    fun openDetail(order: OrderResponse) {
+        _uiState.update { it.copy(detail = order, isDetailLoading = true, errorMessage = null) }
         screenModelScope.launch {
-            when (val result = ordersUseCases.updateStatus(orderId, status)) {
-                is OrderResults.Order -> mergeOrder(result.item)
-                is OrderResults.Orders -> Unit
-                is OrderResults.Sequence -> Unit
+            when (val result = ordersUseCases.getOrderDetail(order.id)) {
+                is OrderResults.Order -> _uiState.update {
+                    it.copy(detail = result.item, isDetailLoading = false)
+                }
+
+                is OrderResults.Orders -> _uiState.update { it.copy(isDetailLoading = false) }
+
+                is OrderResults.Sequence -> _uiState.update { it.copy(isDetailLoading = false) }
+
                 is OrderResults.MessageError -> _uiState.update {
-                    it.copy(errorMessage = result.message.ifBlank { null })
+                    it.copy(isDetailLoading = false, errorMessage = result.message.ifBlank { null })
+                }
+            }
+        }
+    }
+
+    fun closeDetail() {
+        _uiState.update { it.copy(detail = null, errorMessage = null) }
+    }
+
+    fun acceptOrder(orderId: Int) = changeStatus(orderId, OrderStatus.IN_KITCHEN)
+
+    fun sendOnTheWay(orderId: Int) = changeStatus(orderId, OrderStatus.ON_THE_WAY)
+
+    fun rejectOrder(orderId: Int) = changeStatus(orderId, OrderStatus.CANCELLED)
+
+    fun markDelivered(orderId: Int) = changeStatus(orderId, OrderStatus.DELIVERED)
+
+    private fun changeStatus(orderId: Int, status: OrderStatus) {
+        if (_uiState.value.isUpdating) return
+        screenModelScope.launch {
+            _uiState.update { it.copy(isUpdating = true, errorMessage = null) }
+            when (val result = ordersUseCases.updateStatus(orderId, status)) {
+                is OrderResults.Order -> {
+                    mergeOrder(result.item)
+                    _uiState.update { it.copy(isUpdating = false, detail = null) }
+                }
+
+                is OrderResults.Orders -> _uiState.update { it.copy(isUpdating = false) }
+
+                is OrderResults.Sequence -> _uiState.update { it.copy(isUpdating = false) }
+
+                is OrderResults.MessageError -> _uiState.update {
+                    it.copy(isUpdating = false, errorMessage = result.message.ifBlank { null })
                 }
             }
         }
@@ -83,7 +125,9 @@ class OrdersViewModel(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = ordersUseCases.getOrders()) {
                 is OrderResults.Orders -> {
-                    val sorted = result.items.sortedBy { order -> order.sequence }
+                    val sorted = result.items
+                        .filter { it.status != OrderStatus.CANCELLED }
+                        .sortedByDescending { it.sequence }
                     sorted.maxOfOrNull { it.sequence }?.let(ordersUseCases::saveLastSequence)
                     _uiState.update { it.copy(isLoading = false, orders = sorted) }
                 }
@@ -101,13 +145,17 @@ class OrdersViewModel(
 
     private fun mergeOrder(order: OrderResponse) {
         _uiState.update { state ->
-            val existing = state.orders.any { it.id == order.id }
-            val updated = if (existing) {
-                state.orders.map { if (it.id == order.id) order else it }
+            if (order.status == OrderStatus.CANCELLED) {
+                state.copy(orders = state.orders.filterNot { it.id == order.id })
             } else {
-                state.orders + order
+                val existing = state.orders.any { it.id == order.id }
+                val updated = if (existing) {
+                    state.orders.map { if (it.id == order.id) order else it }
+                } else {
+                    state.orders + order
+                }
+                state.copy(orders = updated.sortedByDescending { it.sequence })
             }
-            state.copy(orders = updated.sortedBy { it.sequence })
         }
     }
 }

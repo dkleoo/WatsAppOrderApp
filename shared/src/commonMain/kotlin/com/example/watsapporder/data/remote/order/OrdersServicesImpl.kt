@@ -27,6 +27,13 @@ class OrdersServicesImpl(private val httpClient: HttpClient) : OrdersServices {
         return response.bodyOrThrow()
     }
 
+    override suspend fun getOrderDetail(token: String, id: Int): OrderResponse {
+        val response = httpClient.get(EndPoints.BASE_URL + EndPoints.ORDERS + "/$id") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        return response.bodyOrThrow()
+    }
+
     override suspend fun getOrdersSince(token: String, sequence: Long): List<OrderResponse> {
         val response = httpClient.get(
             EndPoints.BASE_URL + EndPoints.ORDERS + "/since/$sequence",

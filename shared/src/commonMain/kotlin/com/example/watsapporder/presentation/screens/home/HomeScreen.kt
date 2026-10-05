@@ -58,6 +58,7 @@ import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.data.mappers.ProductResponse
 import com.example.watsapporder.data.mappers.ProductType
 import com.example.watsapporder.data.params.StoreDialogParams
+import com.example.watsapporder.data.params.OrderDetailDialogParams
 import com.example.watsapporder.domain.useCase.login.AuthUseCases
 import com.example.watsapporder.presentation.screens.components.ButtonContainerGreen
 import com.example.watsapporder.presentation.screens.components.ButtonTransparentCustom
@@ -67,6 +68,7 @@ import com.example.watsapporder.presentation.screens.home.inputs.InputsContent
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
 import com.example.watsapporder.presentation.screens.home.orders.OrdersContent
 import com.example.watsapporder.presentation.screens.home.orders.OrdersViewModel
+import com.example.watsapporder.presentation.screens.home.orders.OrderDetailDialog
 import com.example.watsapporder.presentation.screens.home.store.StoreEditorDialog
 import com.example.watsapporder.presentation.screens.home.store.StoreViewModel
 import com.example.watsapporder.presentation.screens.login.LoginScreen
@@ -188,7 +190,7 @@ data class HomeScreen(
                         HomeTab.ORDERS -> OrdersContent(
                             state = ordersState,
                             onFilterSelected = ordersViewModel::selectFilter,
-                            onOrderClick = {},
+                            onOrderClick = ordersViewModel::openDetail,
                         )
 
                         HomeTab.MENU -> MenuContent(
@@ -256,6 +258,20 @@ data class HomeScreen(
                     onIdWhatsAppChange = storeViewModel::onIdWhatsAppChange,
                     onSave = storeViewModel::save,
                     onDismiss = storeViewModel::closeEditor,
+                ),
+            )
+        }
+
+        ordersState.detail?.let { detail ->
+            OrderDetailDialog(
+                params = OrderDetailDialogParams(
+                    order = detail,
+                    isLoading = ordersState.isDetailLoading,
+                    isUpdating = ordersState.isUpdating,
+                    onDismiss = ordersViewModel::closeDetail,
+                    onAccept = ordersViewModel::acceptOrder,
+                    onReject = ordersViewModel::rejectOrder,
+                    onSendOnTheWay = ordersViewModel::sendOnTheWay,
                 ),
             )
         }

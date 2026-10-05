@@ -5,6 +5,7 @@ import com.example.watsapporder.data.mappers.OrderStatus
 
 interface OrdersServices {
     suspend fun getOrders(token: String): List<OrderResponse>
+    suspend fun getOrderDetail(token: String, id: Int): OrderResponse
     suspend fun getOrdersSince(token: String, sequence: Long): List<OrderResponse>
     suspend fun getSequence(token: String): Long
     suspend fun updateStatus(token: String, id: Int, status: OrderStatus): OrderResponse

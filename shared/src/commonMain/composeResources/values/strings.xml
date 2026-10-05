@@ -147,4 +147,11 @@
     <string name="orders_view_products">Ver productos y pasos</string>
     <string name="orders_empty">No hay pedidos todavía</string>
     <string name="orders_error">No se pudieron cargar los pedidos</string>
+    <string name="orders_detail_title">Detalle de la orden</string>
+    <string name="orders_customer_data">Datos del cliente</string>
+    <string name="orders_products_title">Productos y pasos seleccionados</string>
+    <string name="orders_accept">Aceptar Pedido (Enviar Cocina)</string>
+    <string name="orders_reject">Rechazar Pedido</string>
+    <string name="orders_send_on_way">Enviar Domicilio (En Camino)</string>
+    <string name="orders_status_cancelled">Rechazado</string>
 </resources>
