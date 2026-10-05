@@ -28,6 +28,7 @@ import com.example.watsapporder.domain.useCase.product.ProductsUseCases
 import com.example.watsapporder.data.mappers.LoggedUser
 import com.example.watsapporder.domain.useCase.store.StoreUseCases
 import com.example.watsapporder.platform.platformModule
+import com.example.watsapporder.platform.deviceTokenProvider
 import com.example.watsapporder.presentation.screens.home.HomeViewModel
 import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
@@ -72,7 +73,7 @@ private val serverModule = module {
 }
 
 private val repositoryModule = module {
-    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), deviceTokenProvider) }
     single<ProductsRepository> { ProductsRepositoryImpl(get(), get()) }
     single<InputsRepository> { InputsRepositoryImpl(get(), get()) }
     single<StoreRepository> { StoreRepositoryImpl(get(), get()) }

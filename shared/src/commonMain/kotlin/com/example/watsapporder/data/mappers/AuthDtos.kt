@@ -7,12 +7,14 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     val name: String,
+    val deviceToken: String = "",
 )
 
 @Serializable
 data class LoginRequest(
     val email: String,
     val password: String,
+    val deviceToken: String = "",
 )
 
 @Serializable

@@ -22,6 +22,8 @@ credentials = "1.6.0"
 googleid = "1.2.1"
 firebaseBom = "34.19.0"
 firebaseAuth = "24.2.0"
+firebaseMessaging = "25.1.3"
+firebaseInAppMessaging = "22.0.3"
 coil = "3.6.3"
 
 [libraries]
@@ -59,6 +61,8 @@ kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-cor
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
+firebase-inappmessaging = { module = "com.google.firebase:firebase-inappmessaging-display", version.ref = "firebaseInAppMessaging" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }

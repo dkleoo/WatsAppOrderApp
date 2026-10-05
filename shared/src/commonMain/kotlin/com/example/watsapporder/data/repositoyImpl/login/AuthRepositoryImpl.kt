@@ -10,11 +10,13 @@ import com.example.watsapporder.data.mappers.toLoggedUser
 import com.example.watsapporder.data.remote.login.AuthServices
 import com.example.watsapporder.data.remote.login.FirebaseAuthGateway
 import com.example.watsapporder.domain.repository.login.AuthRepository
+import com.example.watsapporder.platform.DeviceTokenProvider
 
 class AuthRepositoryImpl(
     private val firebaseGateway: FirebaseAuthGateway,
     private val authServices: AuthServices,
     private val sessionStore: SessionStore,
+    private val deviceTokenProvider: DeviceTokenProvider,
 ) : AuthRepository {
 
     override suspend fun restoreSession(): LoggedUser? = sessionStore.get()
@@ -23,16 +25,21 @@ class AuthRepositoryImpl(
         runAuth { linkBackend(firebaseGateway.signInWithGoogle()) }
 
     override suspend fun signInWithEmail(email: String, password: String): LoginResults = runAuth {
-        authServices.login(LoginRequest(email = email, password = password))
-            .toLoggedUser(AuthProvider.EMAIL)
-            .also(sessionStore::save)
+        authServices.login(
+            LoginRequest(email = email, password = password, deviceToken = deviceToken()),
+        ).toLoggedUser(AuthProvider.EMAIL).also(sessionStore::save)
     }
 
     override suspend fun registerWithEmail(email: String, password: String, name: String): LoginResults =
         runAuth {
-            authServices.register(RegisterRequest(email = email, password = password, name = name))
-                .toLoggedUser(AuthProvider.EMAIL)
-                .also(sessionStore::save)
+            authServices.register(
+                RegisterRequest(
+                    email = email,
+                    password = password,
+                    name = name,
+                    deviceToken = deviceToken(),
+                ),
+            ).toLoggedUser(AuthProvider.EMAIL).also(sessionStore::save)
         }
 
     override suspend fun sendPhoneCode(phoneNumber: String): PhoneResults = try {
@@ -62,12 +69,18 @@ class AuthRepositoryImpl(
 
         return try {
             authServices.register(
-                RegisterRequest(email = email, password = password, name = firebaseUser.name),
+                RegisterRequest(
+                    email = email,
+                    password = password,
+                    name = firebaseUser.name,
+                    deviceToken = deviceToken(),
+                ),
             ).toLoggedUser(firebaseUser.provider).also(sessionStore::save)
         } catch (registerException: Exception) {
             try {
-                authServices.login(LoginRequest(email = email, password = password))
-                    .toLoggedUser(firebaseUser.provider)
+                authServices.login(
+                    LoginRequest(email = email, password = password, deviceToken = deviceToken()),
+                ).toLoggedUser(firebaseUser.provider)
                     .also(sessionStore::save)
             } catch (loginException: Exception) {
                 throw IllegalStateException(
@@ -90,6 +103,10 @@ class AuthRepositoryImpl(
     } catch (exception: Exception) {
         LoginResults.MessageError(exception.message.orEmpty())
     }
+
+    private suspend fun deviceToken(): String = runCatching {
+        deviceTokenProvider.getToken()
+    }.getOrDefault("")
 }
 
 private fun federatedPassword(email: String): String {

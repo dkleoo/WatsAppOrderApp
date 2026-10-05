@@ -15,7 +15,10 @@ dependencies {
     implementation(project(":shared"))
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.inappmessaging)
 
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
 
     implementation(libs.compose.uiToolingPreview)

@@ -60,6 +60,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
             implementation(libs.kotlinx.coroutines.play.services)
             implementation(libs.firebase.auth)
+            implementation(libs.firebase.messaging)
             implementation(libs.androidx.credentials)
             implementation(libs.androidx.credentials.play.services)
             implementation(libs.googleid)
