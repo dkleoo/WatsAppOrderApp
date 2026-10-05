@@ -268,6 +268,7 @@ data class HomeScreen(
                     order = detail,
                     isLoading = ordersState.isDetailLoading,
                     isUpdating = ordersState.isUpdating,
+                    errorMessage = ordersState.errorMessage,
                     onDismiss = ordersViewModel::closeDetail,
                     onAccept = ordersViewModel::acceptOrder,
                     onReject = ordersViewModel::rejectOrder,

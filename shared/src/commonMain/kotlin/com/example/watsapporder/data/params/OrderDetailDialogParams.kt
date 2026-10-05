@@ -6,6 +6,7 @@ data class OrderDetailDialogParams(
     val order: OrderResponse,
     val isLoading: Boolean,
     val isUpdating: Boolean,
+    val errorMessage: String?,
     val onDismiss: () -> Unit,
     val onAccept: (Int) -> Unit,
     val onReject: (Int) -> Unit,

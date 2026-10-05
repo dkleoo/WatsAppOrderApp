@@ -442,6 +442,17 @@ fun OrderDetailDialog(params: OrderDetailDialogParams) {
                 }
                 Spacer(Modifier.height(14.dp))
                 PaymentRow(order = params.order)
+                if (params.errorMessage != null) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = params.errorMessage,
+                        style = plazaOnTextStyle(
+                            base = MaterialTheme.typography.bodySmall,
+                            color = ColorApp.errorColor,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                }
                 Spacer(Modifier.height(18.dp))
                 OrderActions(params)
             }
