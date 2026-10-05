@@ -128,4 +128,23 @@
     <string name="store_avatar_content_description">Foto de perfil</string>
     <string name="store_error_required">Este campo é obrigatório</string>
     <string name="store_updated">Loja atualizada</string>
+    <string name="orders_title">Pedidos</string>
+    <string name="orders_subtitle">Toque em qualquer cartão para ver o detalhe com passos</string>
+    <string name="orders_filter_all">Todos</string>
+    <string name="orders_filter_pending">Pendentes</string>
+    <string name="orders_filter_kitchen">Cozinha</string>
+    <string name="orders_filter_on_route">Caminho</string>
+    <string name="orders_filter_delivered">Entregues</string>
+    <string name="orders_status_pending">Nova Pendente</string>
+    <string name="orders_status_kitchen">Na Cozinha</string>
+    <string name="orders_status_on_route">A Caminho</string>
+    <string name="orders_status_delivered">Entregue</string>
+    <string name="orders_order_number">PEDIDO #%1$d</string>
+    <string name="orders_phone_format">Tel: %1$s</string>
+    <string name="orders_address_format">End: %1$s</string>
+    <string name="orders_payment_format">Pagamento: %1$s</string>
+    <string name="orders_payment_default">Não especificado</string>
+    <string name="orders_view_products">Ver produtos e passos</string>
+    <string name="orders_empty">Ainda não há pedidos</string>
+    <string name="orders_error">Não foi possível carregar os pedidos</string>
 </resources>

@@ -16,6 +16,7 @@ import watsapporder.shared.generated.resources.Res
 import watsapporder.shared.generated.resources.edit_product_error_price
 
 enum class HomeTab {
+    ORDERS,
     INPUTS,
     CREATE,
     MENU,

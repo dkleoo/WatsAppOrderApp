@@ -7,5 +7,7 @@ interface SessionStore {
     fun get(): LoggedUser?
     fun saveFederatedPassword(email: String, password: String)
     fun getFederatedPassword(email: String): String?
+    fun saveLastOrderSequence(sequence: Long)
+    fun getLastOrderSequence(): Long
     fun clear()
 }

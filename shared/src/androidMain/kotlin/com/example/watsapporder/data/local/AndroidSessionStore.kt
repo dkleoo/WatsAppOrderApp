@@ -51,6 +51,12 @@ class AndroidSessionStore : SessionStore {
     override fun getFederatedPassword(email: String): String? =
         prefs.getString(passwordKey(email), null)
 
+    override fun saveLastOrderSequence(sequence: Long) {
+        prefs.edit().putLong(KEY_LAST_SEQUENCE, sequence).apply()
+    }
+
+    override fun getLastOrderSequence(): Long = prefs.getLong(KEY_LAST_SEQUENCE, 0L)
+
     override fun clear() {
         prefs.edit().clear().apply()
     }
@@ -67,5 +73,6 @@ class AndroidSessionStore : SessionStore {
         const val KEY_PHOTO = "photo_url"
         const val KEY_STORE_ID = "store_id"
         const val STORE_ID_NONE = -1
+        const val KEY_LAST_SEQUENCE = "last_order_sequence"
     }
 }

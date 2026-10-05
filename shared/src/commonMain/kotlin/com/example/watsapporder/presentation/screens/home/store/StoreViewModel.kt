@@ -46,23 +46,33 @@ class StoreViewModel(
     val uiState = _uiState.asStateFlow()
 
     fun bootstrap() {
+        loadStore()
+    }
+
+    fun openEditor() {
+        _uiState.update { it.copy(isEditorVisible = true, errorMessage = null) }
+        if (_uiState.value.store == null) {
+            loadStore()
+        }
+    }
+
+    private fun loadStore() {
         screenModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = storeUseCases.getStoreForUser(loggedUser.backendId)) {
                 is StoreResults.Store -> _uiState.update {
-                    it.copy(isLoading = false, store = result.item, form = result.item.toForm())
+                    it.copy(
+                        isLoading = false,
+                        store = result.item,
+                        form = result.item.toForm(),
+                        errorMessage = null,
+                    )
                 }
 
                 is StoreResults.MessageError -> _uiState.update {
-                    it.copy(isLoading = false, isEditorVisible = true)
+                    it.copy(isLoading = false)
                 }
             }
-        }
-    }
-
-    fun openEditor() {
-        _uiState.update {
-            it.copy(isEditorVisible = true, form = it.store?.toForm() ?: it.form)
         }
     }
 

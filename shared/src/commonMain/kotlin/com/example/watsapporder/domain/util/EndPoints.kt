@@ -9,4 +9,7 @@ object EndPoints {
     const val INPUTS = "inputs"
     const val STORES = "stores"
     const val STORES_ME = "stores/me"
+    const val ORDERS = "orders"
+    const val ORDERS_WS = "orders/ws"
+    const val ORDERS_SEQUENCE = "orders/sequence"
 }

@@ -12,17 +12,7 @@ class StoreRepositoryImpl(
 
     override suspend fun getStore(): StoreResults = loadStore()
 
-    override suspend fun getStoreForUser(userId: Int): StoreResults = try {
-        val token = sessionStore.get()?.token.orEmpty()
-        val store = services.getStoreByUser(token, userId)
-        if (store == null) {
-            StoreResults.MessageError(STORE_NOT_FOUND)
-        } else {
-            StoreResults.Store(store)
-        }
-    } catch (exception: Exception) {
-        StoreResults.MessageError(exception.message.orEmpty())
-    }
+    override suspend fun getStoreForUser(userId: Int): StoreResults = loadStore()
 
     override suspend fun updateStore(id: Int, request: StoreRequest): StoreResults = try {
         val token = sessionStore.get()?.token.orEmpty()

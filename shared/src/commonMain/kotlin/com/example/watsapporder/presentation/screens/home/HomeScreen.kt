@@ -65,6 +65,8 @@ import com.example.watsapporder.presentation.screens.home.create.CreateProductCo
 import com.example.watsapporder.presentation.screens.home.create.CreateProductViewModel
 import com.example.watsapporder.presentation.screens.home.inputs.InputsContent
 import com.example.watsapporder.presentation.screens.home.inputs.InputsViewModel
+import com.example.watsapporder.presentation.screens.home.orders.OrdersContent
+import com.example.watsapporder.presentation.screens.home.orders.OrdersViewModel
 import com.example.watsapporder.presentation.screens.home.store.StoreEditorDialog
 import com.example.watsapporder.presentation.screens.home.store.StoreViewModel
 import com.example.watsapporder.presentation.screens.login.LoginScreen
@@ -130,12 +132,15 @@ data class HomeScreen(
         val createState by createViewModel.uiState.collectAsState()
         val storeViewModel = koinScreenModel<StoreViewModel> { parametersOf(loggedUser) }
         val storeState by storeViewModel.uiState.collectAsState()
+        val ordersViewModel = koinScreenModel<OrdersViewModel>()
+        val ordersState by ordersViewModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val authUseCases = koinInject<AuthUseCases>()
 
         LaunchedEffect(Unit) {
             viewModel.loadProducts()
             storeViewModel.bootstrap()
+            ordersViewModel.start()
         }
 
         LaunchedEffect(state.selectedTab) {
@@ -159,7 +164,8 @@ data class HomeScreen(
             ) {
                 HomeHeader(
                     loggedUser = loggedUser,
-                    ordersCount = 0,
+                    ordersCount = ordersState.pendingCount,
+                    onOrdersClick = { viewModel.selectTab(HomeTab.ORDERS) },
                     onAvatarClick = storeViewModel::openEditor,
                     onLogout = {
                         authUseCases.signOut()
@@ -179,6 +185,12 @@ data class HomeScreen(
                     color = ColorApp.background,
                 ) {
                     when (state.selectedTab) {
+                        HomeTab.ORDERS -> OrdersContent(
+                            state = ordersState,
+                            onFilterSelected = ordersViewModel::selectFilter,
+                            onOrderClick = {},
+                        )
+
                         HomeTab.MENU -> MenuContent(
                             state = state,
                             onEdit = viewModel::openEditor,
@@ -261,6 +273,7 @@ private fun providerLabel(provider: AuthProvider): String = when (provider) {
 private fun HomeHeader(
     loggedUser: LoggedUser,
     ordersCount: Int,
+    onOrdersClick: () -> Unit,
     onAvatarClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -318,7 +331,7 @@ private fun HomeHeader(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
                 .background(ColorApp.espressoDark)
-                .clickable {}
+                .clickable { onOrdersClick() }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

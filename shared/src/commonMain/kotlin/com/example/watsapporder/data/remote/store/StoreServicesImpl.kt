@@ -28,15 +28,6 @@ class StoreServicesImpl(private val httpClient: HttpClient) : StoreServices {
         return runCatching { response.body<StoreResponse>() }.getOrNull()
     }
 
-    override suspend fun getStoreByUser(token: String, userId: Int): StoreResponse? {
-        val response = httpClient.get(EndPoints.BASE_URL + EndPoints.STORES + "/user/$userId") {
-            header(HttpHeaders.Authorization, "Bearer $token")
-        }
-        if (response.status.value == 404 || response.status.value == 400) return null
-        if (!response.status.isSuccess()) return null
-        return runCatching { response.body<StoreResponse>() }.getOrNull()
-    }
-
     override suspend fun updateStore(token: String, id: Int, request: StoreRequest): StoreResponse {
         val response = httpClient.put(EndPoints.BASE_URL + EndPoints.STORES + "/$id") {
             header(HttpHeaders.Authorization, "Bearer $token")
