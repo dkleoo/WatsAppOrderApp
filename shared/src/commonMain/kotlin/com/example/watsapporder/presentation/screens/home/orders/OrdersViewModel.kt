@@ -49,8 +49,8 @@ class OrdersViewModel(
     private var streamJob: Job? = null
 
     fun start() {
-        if (streamJob != null) return
         loadOrders()
+        if (streamJob != null) return
         streamJob = screenModelScope.launch {
             ordersUseCases.streamOrders(
                 startSequence = ordersUseCases.lastSequence(),
@@ -82,8 +82,10 @@ class OrdersViewModel(
         screenModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = ordersUseCases.getOrders()) {
-                is OrderResults.Orders -> _uiState.update {
-                    it.copy(isLoading = false, orders = result.items.sortedBy { order -> order.sequence })
+                is OrderResults.Orders -> {
+                    val sorted = result.items.sortedBy { order -> order.sequence }
+                    sorted.maxOfOrNull { it.sequence }?.let(ordersUseCases::saveLastSequence)
+                    _uiState.update { it.copy(isLoading = false, orders = sorted) }
                 }
 
                 is OrderResults.Order -> _uiState.update { it.copy(isLoading = false) }
